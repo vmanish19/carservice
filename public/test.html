@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>Page Title</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="http://code.jquery.com/mobile/1.4.0-rc.1/jquery.mobile-1.4.0-rc.1.min.css">
+  <script src="http://code.jquery.com/jquery-1.10.2.min.js"></script>
+  <script src="http://code.jquery.com/mobile/1.4.0-rc.1/jquery.mobile-1.4.0-rc.1.min.js"></script>
+  <!-- Google maps source for places seearch box and map display on page initilization-->
+  <!-- <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false&libraries=places"></script> -->
+
+  <style>
+  #map-page, #map_canvas { width: 100%; height: 80%; padding: 0; }
+
+  .container_16, #set_location {
+    z-index:1;
+  }
+
+  .container_16 .alpha { clear-left: 0; }
+
+  .grid_3,.grid_13{ margin: 0; padding: 1.5% !important; border: 0; float: left; }
+
+  .container_16 { overflow: hidden; }
+
+  .container_16 .grid_3 { 
+    width: 15.75% !important;
+  }
+
+  .container_16 .grid_13 { 
+    width: 78.25% !important;
+  }
+</style>
+</head>
+
+<body>
+
+  <div data-role="page" id="map-page" data-url="map-page">
+    <div class='container_16 ui-corner-all' style='background-color: white; z-index:1000000000 !important; ' >
+
+      <div class='grid_13' style='padding-top:0% !important; padding-bottom:0% !important;'>
+        <input id='origin-input' type='search' style=''  placeholder="Enter an origin location">
+      </div>
+      <div class='grid_13' style='padding-top:0% !important; padding-bottom:0% !important;'>
+        <input id='destination-input' type='search' style='' placeholder="Enter a destination location">
+      </div>
+    </div>
+    <div>
+    <button id =mode-selector type="button">find</button>
+    </div>
+     <!--  <div id="mode-selector" class="controls">
+        <input type="radio" name="type" id="changemode-walking" checked="checked">
+        <label for="changemode-walking">Walking</label>
+
+        <input type="radio" name="type" id="changemode-transit">
+        <label for="changemode-transit">Transit</label>
+
+        <input type="radio" name="type" id="changemode-driving">
+        <label for="changemode-driving">Driving</label>
+      </div> -->
+    </div>
+
+    <div role="main" class="ui-content" id="map_canvas" style='padding:0%;'>
+      <!-- map loads here... -->
+    </div>
+<script>
+       // This example requires the Places library. Include the libraries=places
+      // parameter when you first load the API. For example:
+      // <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places">
+
+      function initMap() {
+        var map = new google.maps.Map(document.getElementById('map_canvas'), {
+          mapTypeControl: false,
+          center: {lat: -33.8688, lng: 151.2195},
+          zoom: 13
+        });
+
+        new AutocompleteDirectionsHandler(map);
+      }
+
+       /**
+        * @constructor
+        */
+        function AutocompleteDirectionsHandler(map) {
+          this.map = map;
+          this.originPlaceId = null;
+          this.destinationPlaceId = null;
+          this.travelMode = 'DRIVING';
+          var originInput = document.getElementById('origin-input');
+          var destinationInput = document.getElementById('destination-input');
+          var modeSelector = document.getElementById('mode-selector');
+          this.directionsService = new google.maps.DirectionsService;
+          this.directionsDisplay = new google.maps.DirectionsRenderer;
+          this.directionsDisplay.setMap(map);
+
+          var originAutocomplete = new google.maps.places.Autocomplete(
+            originInput, {placeIdOnly: true});
+          var destinationAutocomplete = new google.maps.places.Autocomplete(
+            destinationInput, {placeIdOnly: true});
+
+          // this.setupClickListener('changemode-walking', 'WALKING');
+          // this.setupClickListener('changemode-transit', 'TRANSIT');
+          // this.setupClickListener('changemode-driving', 'DRIVING');
+
+          this.setupPlaceChangedListener(originAutocomplete, 'ORIG');
+          this.setupPlaceChangedListener(destinationAutocomplete, 'DEST');
+
+          this.map.controls[google.maps.ControlPosition.TOP_LEFT].push(originInput);
+          this.map.controls[google.maps.ControlPosition.TOP_LEFT].push(destinationInput);
+          this.map.controls[google.maps.ControlPosition.TOP_LEFT].push(modeSelector);
+        }
+
+      // Sets a listener on a radio button to change the filter type on Places
+      // Autocomplete.
+      AutocompleteDirectionsHandler.prototype.setupClickListener = function(id, mode) {
+        var radioButton = document.getElementById(id);
+        var me = this;
+        radioButton.addEventListener('click', function() {
+          me.travelMode = mode;
+          me.route();
+        });
+      };
+
+      AutocompleteDirectionsHandler.prototype.setupPlaceChangedListener = function(autocomplete, mode) {
+        var me = this;
+        autocomplete.bindTo('bounds', this.map);
+        autocomplete.addListener('place_changed', function() {
+          var place = autocomplete.getPlace();
+          if (!place.place_id) {
+            window.alert("Please select an option from the dropdown list.");
+            return;
+          }
+          if (mode === 'ORIG') {
+            me.originPlaceId = place.place_id;
+          } else {
+            me.destinationPlaceId = place.place_id;
+          }
+          me.route();
+        });
+
+      };
+
+      AutocompleteDirectionsHandler.prototype.route = function() {
+        if (!this.originPlaceId || !this.destinationPlaceId) {
+          return;
+        }
+        var me = this;
+
+        this.directionsService.route({
+          origin: {'placeId': this.originPlaceId},
+          destination: {'placeId': this.destinationPlaceId},
+          travelMode: this.travelMode
+        }, function(response, status) {
+          if (status === 'OK') {
+            me.directionsDisplay.setDirections(response);
+          } else {
+            window.alert('Directions request failed due to ' + status);
+          }
+        });
+      };
+
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyATDW6vWXEHWXMm9BsChfrrc6SRrGAmudw&libraries=places&callback=initMap"
+    async defer></script>
+  </body>
+  </html>

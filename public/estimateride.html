@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Place Autocomplete</title>
+  <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <style>
+/* Always set the map height explicitly to define the size of the div
+* element that contains the map. */
+#map {
+  height: 100%; 
+  width: 100%; 
+  position:absolute; 
+  top: 0; 
+  left: 0; 
+  z-index: -1; /* Set z-index to 0 as it will be on a layer below the contact form */
+}
+/* Optional: Makes the sample page fill the window. */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+.controls {
+  margin-top: 10px;
+  border: 1px solid transparent;
+  border-radius: 2px 0 0 2px;
+  box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  height: 32px;
+  outline: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+#origin-input,
+#destination-input {
+  background-color: #fff;
+  font-family: Roboto;
+  font-size: 15px;
+  font-weight: 300;
+  margin-left: 12px;
+  padding: 0 11px 0 13px;
+  text-overflow: ellipsis;
+  width: 200px;
+  /*z-index: 1;  The z-index should be higher than Google Maps */
+
+}
+
+#origin-input:focus,
+#destination-input:focus {
+  border-color: #4d90fe;
+  /*//z-index: 1;  The z-index should be higher than Google Maps */
+
+}
+.sidenav {
+  height: 40%;
+  width: 22%;
+  /*position: relative;*/
+  z-index: 1;
+  top: 0;
+  left: 0;
+  background-color: white;
+  overflow-x: hidden;
+  padding-top: 0px;
+}
+
+#mode-selector {
+  color: #fff;
+  background-color: #4d90fe;
+  margin-left: 12px;
+  padding: 5px 11px 0px 11px;
+}
+
+#mode-selector label {
+  font-family: Roboto;
+  font-size: 13px;
+  font-weight: 300;
+}
+
+</style>
+</head>
+<body>
+  <nav class="navbar navbar-inverse">
+    <div class="container-fluid">
+      <div class="navbar-header">
+        <a class="navbar-brand" href="index.html"><em>UBER</em></a>
+      </div>
+      <ul class="nav navbar-nav">
+        <li class="active"><a href="index.html">Home</a></li>
+        <li ><a href="registration.html"><em>Ride</em></a></li>
+        <li><a href="#" onclick="profile()"><em>Drive</em></a></li>
+
+      </ul>
+      <ul class="nav navbar-nav nav navbar-nav navbar-right">
+
+        <li><a href="#" onclick="profile()"><em>HELP</em></a></li>
+        <li><a href="signin.html"><em>SIGN IN</em></a></li>
+      </ul>
+    </div>
+  </nav>
+  <div >
+    <div style="position: relative; left: 30px;" class="sidenav">
+
+      <div id ="panel" class="panel-body" ><h2>Uber fare estimator</h2><p>How much does Uber cost in your city? Calculate a fare estimate for your next trip. Simply enter a pickup location and destination to get started.</p></div>
+    </div>
+    <br>
+    <div style="position: relative; left: 30px;" class="sidenav">
+      <br>
+      <div class="col-xs-2">
+        <input id="origin-input" class="form-control" type="text"
+        placeholder="Enter an origin location">
+      </div>
+      <br>
+      <br>
+      <br>
+      <div class="col-xs-2">
+        <input id="destination-input"  class="form-control" type="text"
+        placeholder="Enter a destination location">
+      </div>
+      <br>
+      <br>
+      <br>
+    </div> 
+    <br>
+    <br>
+    <div style="position: relative; left: 30px;" class="sidenav">
+
+      <div style= "display:none;" id ="panel1" class="panel-body" >
+        <div id= jsonData>
+        </div> 
+
+      </div>
+    </div>
+  </div>
+
+
+  <div hidden id="mode-selector" class="controls">
+
+    <!-- <input type="radio" name="type" id="changemode-driving">-->
+    <button id="changemode-driving">Driving</button> 
+  </div>
+
+  <div id="map"   ; float: right;
+  "></div> 
+
+  <script>
+
+// This example requires the Places library. Include the libraries=places
+// parameter when you first load the API. For example:
+// <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places">
+
+function initMap() {
+  var map = new google.maps.Map(document.getElementById('map'), {
+    mapTypeControl: false,          
+    center: {lat: 41.831677, lng: -87.625826},
+    zoom: 16
+  });
+
+  new AutocompleteDirectionsHandler(map);
+}
+
+/**
+* @constructor
+*/
+function AutocompleteDirectionsHandler(map) {
+  this.map = map;
+  this.originPlaceId = null;
+  this.destinationPlaceId = null;
+  this.travelMode = 'DRIVING';
+  var originInput = document.getElementById('origin-input');
+  var destinationInput = document.getElementById('destination-input');
+  var modeSelector = document.getElementById('mode-selector');
+  this.directionsService = new google.maps.DirectionsService;
+  this.directionsDisplay = new google.maps.DirectionsRenderer;
+  this.directionsDisplay.setMap(map);
+
+  var originAutocomplete = new google.maps.places.Autocomplete(
+    originInput, {placeIdOnly: true});
+  var destinationAutocomplete = new google.maps.places.Autocomplete(
+    destinationInput, {placeIdOnly: true});
+
+  this.setupClickListener('changemode-driving', 'DRIVING');
+
+  this.setupPlaceChangedListener(originAutocomplete, 'ORIG');
+  this.setupPlaceChangedListener(destinationAutocomplete, 'DEST');
+
+//  this.map.controls[google.maps.ControlPosition.TOP_LEFT].push(originInput);
+//   this.map.controls[google.maps.ControlPosition.TOP_LEFT].push(destinationInput);
+this.map.controls[google.maps.ControlPosition.TOP_LEFT].push(modeSelector);
+}
+
+// Sets a listener on a radio button to change the filter type on Places
+// Autocomplete.
+AutocompleteDirectionsHandler.prototype.setupClickListener = function(id, mode) {
+  var radioButton = document.getElementById(id);
+  var me = this;
+  radioButton.addEventListener('click', function() {
+    me.travelMode = mode;
+    me.route();
+  });
+};
+
+AutocompleteDirectionsHandler.prototype.setupPlaceChangedListener = function(autocomplete, mode) {
+  var me = this;
+  autocomplete.bindTo('bounds', this.map);
+  autocomplete.addListener('place_changed', function() {
+    var place = autocomplete.getPlace();
+    if (!place.place_id) {
+      window.alert("Please select an option from the dropdown list.");
+      return;
+    }
+    if (mode === 'ORIG') {
+      me.originPlaceId = place.place_id;
+    } else {
+      me.destinationPlaceId = place.place_id;
+    }
+    me.route();
+  });
+
+};
+
+AutocompleteDirectionsHandler.prototype.route = function() {
+  if (!this.originPlaceId || !this.destinationPlaceId) {
+    return;
+  }
+  var me = this;
+  var link = document.getElementById('panel');
+link.style.display = 'none'; //or
+link.style.visibility = 'hidden';
+
+
+// ajax call to get product data
+var origInp = document.getElementById('origin-input');
+var destInt = document.getElementById('destination-input');
+
+$.ajax({
+url: "http://localhost:3000/api/estimates/address?start="+origInp.value+"&end="+destInt.value,  //write your server url here...
+dataType: 'json',  //The data type expected of the server response.
+success: function(data) {
+myServerData = data;  //server response
+console.log(myServerData);
+var tableData = document.getElementById("jsonData");
+var opt = document.createElement("p");
+opt.innerHTML="<h4><strong>Your Options:</strong></h4>"
+var elopt = document.getElementById("jsonData");
+elopt.appendChild(opt);    
+var para = document.createElement("div");
+
+for(index in myServerData){
+  for(price in myServerData[index]){
+    if(Object.values(myServerData[index][price])[2]==="uberWAV"
+      || Object.values(myServerData[index][price])[2]==="UberSELECT")
+      continue;
+    para.innerHTML+="<p>"+ Object.values(myServerData[index][price])[2]+": &nbsp;"
+     +Object.values(myServerData[index][price])[7] +
+    "</p>";
+    console.log(Object.values(myServerData[index][price])[2]);
+    var element = document.getElementById("jsonData");
+    element.appendChild(para);
+
+  }  
+}// THE OBJECT STRINGIFIED
+
+// var new_row = document.createElement("div");
+// new_row.innerHTML='<div style="position: relative; left: 30px;" class="sidenav"></div>';
+// document.getElementById("demo").innerHTML = myServerData[0].display_name + ", " + myServerData.estimate; 
+document.getElementById("panel1").style = "block";
+}
+});
+// ajax call ends
+
+this.directionsService.route({
+  origin: {'placeId': this.originPlaceId},
+  destination: {'placeId': this.destinationPlaceId},
+  travelMode: this.travelMode
+}, function(response, status) {
+  if (status === 'OK') {
+    me.directionsDisplay.setDirections(response);
+  } else {
+    window.alert('Directions request failed due to ' + status);
+  }
+});
+};
+
+     localStorage.setItem("count", 0);
+
+     function registration(path) {
+     var image_path = ("http://localhost:3000/" + path + ".html");
+      window.location =image_path;
+      console.log(image_path);
+     }
+
+    
+    function refresh() {
+      var xhttp = new XMLHttpRequest();
+      xhttp.open("GET", "http://localhost:3000/testing", true);
+      xhttp.send();
+      xhttp.addEventListener("readystatechange", processRequest, false);
+      function processRequest(e) {
+        if (xhttp.readyState == 4 && xhttp.status == 200) {
+          var response = JSON.parse(xhttp.responseText);
+          var numberString = response.dogPicture;
+          var count = localStorage.getItem("count");
+ 
+        if(numberString !=="estimateride" && numberString !==""){
+             localStorage.setItem("count", 0);
+             var count = localStorage.getItem("count");
+             console.log("elsse " +numberString);
+             registration(numberString);
+
+            }
+        }
+      }
+      setTimeout(refresh, 2000);
+    }
+    refresh();
+
+
+</script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyATDW6vWXEHWXMm9BsChfrrc6SRrGAmudw&libraries=places&callback=initMap"
+async defer></script>
+</body>
+</html>

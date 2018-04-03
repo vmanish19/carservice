@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Bootstrap Example</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+</head>
+<body>
+
+ <div class="container">
+
+  <nav class="navbar navbar-inverse">
+    <div class="container-fluid">
+      <div class="navbar-header">
+        <a class="navbar-brand" href="index.html"><em>UBER</em></a>
+      </div>
+      <ul class="nav navbar-nav">
+        <li class="active"><a href="#">Home</a></li>
+        <li ><a href="registration.html"><em>Ride</em></a></li>
+        <li><a href="driver.html" onclick="profile()"><em>Drive</em></a></li>
+      </ul>
+      <ul class="nav navbar-nav nav navbar-nav navbar-right">
+
+       <li><a href="#" onclick="profile()"><em>HELP</em></a></li>
+       <li><a href="#" onclick="login()"><em>SIGN IN</em></a></li>
+     </ul>
+   </div>
+ </nav>
+ <br>
+ <br>
+ <br>
+ <br>
+ <br>
+
+ <h2>Sign In</h2>
+ <br>
+
+ <div class="form-group row">
+  <div class=col-md-5>
+   <h4>Driver</h4>
+   <h5>Find everything you need to track your success on the road.</h5>
+   <button onclick="driver()" type="button" class="btn btn-primary btn-lg btn btn-success" >Driver Sign In</button>
+ </div>
+ <div class=col-md-5>
+   <h4>Rider</h4>
+   <h5>Manage your payment options review trip history, and more.</h5>
+   <button onclick="user()" type="button" class="btn btn-primary btn-lg btn btn-success">Rider Sign In</button>
+ </div>
+</div>
+
+
+</div>
+
+<script>
+ localStorage.setItem("count", 0);
+
+ function registration(path) {
+  var image_path = ("http://localhost:3000/" + path + ".html");
+  window.location =image_path;
+  console.log(image_path);
+}
+
+function user() {
+  var image_path = ("http://localhost:3000/userlogin.html");
+  window.location =image_path;
+  console.log(image_path);
+}
+function driver() {
+  var image_path = ("http://localhost:3000/driverlogin.html");
+  window.location =image_path;
+  console.log(image_path);
+}
+
+
+function refresh() {
+  var xhttp = new XMLHttpRequest();
+  xhttp.open("GET", "http://localhost:3000/testing", true);
+  xhttp.send();
+  xhttp.addEventListener("readystatechange", processRequest, false);
+  function processRequest(e) {
+    if (xhttp.readyState == 4 && xhttp.status == 200) {
+      var response = JSON.parse(xhttp.responseText);
+      var numberString = response.dogPicture;
+      var count = localStorage.getItem("count");
+
+      if(numberString !=="index"&& numberString !==""){
+       localStorage.setItem("count", 0);
+       var count = localStorage.getItem("count");
+       console.log("elsse " +numberString);
+       registration(numberString);
+
+     }
+   }
+ }
+ setTimeout(refresh, 2000);
+}
+refresh();
+</script>
+
+</body>
+</html>
