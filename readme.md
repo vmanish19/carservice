@@ -10,3 +10,5 @@
    * **note: Application will fail to start if mongodb database is not install in your system.**
 5) Type npm start.
 6) Type localhost:3000 in browser.
+7) For Google login please use your client id otherwise it will open my mail 
+   box for authorisation.
