@@ -10,6 +10,5 @@ var userSchema1 = new mongoose.Schema({
 	password:{type:String, required:true}
 
 });
-
 var Drive =mongoose.model('drivers', userSchema1);
 module.exports = Drive;
