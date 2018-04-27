@@ -30,7 +30,6 @@ var options = {
   name: 'manish',
 
 }
-
 app.use(morgan('dev')); // Morgan Middleware
 app.use(bodyParser.json());
 //app.use(bodyParser.raw({ contentType: 'application/json' }));
